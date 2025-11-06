@@ -1,8 +1,8 @@
 const { verify } = require("jsonwebtoken");
 
-const moongose require('moogose');
+const mongoose = require('mongoose');
 
-const userSchema =  moongose.Schema({
+const userSchema =  mongoose.Schema({
     email:{
         type: String,
         required:[true, 'Email is required!'],
