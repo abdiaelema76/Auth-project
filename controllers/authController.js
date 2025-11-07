@@ -1,7 +1,7 @@
-
+const jwt = require('jsonwebtoken');
 const User = require('../models/UsersModel');
-const {signupSchema} = require('../middlewares/validator');
-const { doHash } = require('../utils/hashing');
+const {signupSchema, signinSchema} = require('../middlewares/validator');
+const { doHash, doHashValidation } = require('../utils/hashing');
 exports.signup = async (req, res) => {
     const {email, password} = req.body;
     try {
@@ -12,7 +12,8 @@ exports.signup = async (req, res) => {
         const existingUser = await User.findOne({email})
 
         if(existingUser){
-            return res.status(401).json({success:false, message:"User already exists!"})
+            return res.status(401)
+            .json({success:false, message:"User already exists!"})
         }
 
         const hashedPassword = await doHash(password, 12);
@@ -29,5 +30,48 @@ exports.signup = async (req, res) => {
         });
     }catch(error){
         console.log(error);
+    }
+};
+
+exports.signin = async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        console.log('Signin: start', { email });
+        const { error, value } = signinSchema.validate({ email, password });
+        if (error) {
+            console.log('Signin: validation error', error.details[0].message);
+            return res.status(401).json({ success: false, message: error.details[0].message });
+        }
+        console.log('Signin: validation passed');
+        const existingUser = await User.findOne({ email }).select('password email verified');
+        console.log('Signin: user lookup result', existingUser);
+        if (!existingUser) {
+            return res.status(401).json({ success: false, message: "User does not exist!" });
+        }
+        const result = await doHashValidation(password, existingUser.password);
+        console.log('Signin: password validation result', result);
+        if (!result) {
+            return res.status(401).json({ success: false, message: "Invalid credentials!" });
+        }
+        const token = jwt.sign({
+            userId: existingUser._id,
+            email: existingUser.email,
+            verified: existingUser.verified,
+        }, process.env.TOKEN_SECRET);
+        console.log('Signin: token generated');
+        res.cookie('Authorization', 'Bearer ' + token, {
+            expires: new Date(Date.now() + 8 * 3600000),
+            httpOnly: process.env.NODE_ENV === 'production',
+            secure: process.env.NODE_ENV === 'production',
+        });
+        console.log('Signin: cookie set, sending response');
+        return res.json({
+            success: true,
+            token,
+            message: "You have signed in successfully!",
+        });
+    } catch (error) {
+        console.log('Signin: error', error);
+        return res.status(500).json({ success: false, message: "Internal server error" });
     }
 };
