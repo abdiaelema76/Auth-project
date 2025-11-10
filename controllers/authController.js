@@ -40,10 +40,12 @@ exports.signin = async (req, res) => {
         const { error, value } = signinSchema.validate({ email, password });
         if (error) {
             console.log('Signin: validation error', error.details[0].message);
-            return res.status(401).json({ success: false, message: error.details[0].message });
+            return res
+            .status(401)
+            .json({ success: false, message: error.details[0].message });
         }
         console.log('Signin: validation passed');
-        const existingUser = await User.findOne({ email }).select('password email verified');
+        const existingUser = await User.findOne({ email }).select('+password');
         console.log('Signin: user lookup result', existingUser);
         if (!existingUser) {
             return res.status(401).json({ success: false, message: "User does not exist!" });
@@ -57,21 +59,45 @@ exports.signin = async (req, res) => {
             userId: existingUser._id,
             email: existingUser.email,
             verified: existingUser.verified,
-        }, process.env.TOKEN_SECRET);
-        console.log('Signin: token generated');
-        res.cookie('Authorization', 'Bearer ' + token, {
-            expires: new Date(Date.now() + 8 * 3600000),
-            httpOnly: process.env.NODE_ENV === 'production',
-            secure: process.env.NODE_ENV === 'production',
+        }, process.env.TOKEN_SECRET,
+        {
+            expiresIn: '8h',
         });
-        console.log('Signin: cookie set, sending response');
+        
         return res.json({
             success: true,
             token,
             message: "You have signed in successfully!",
         });
     } catch (error) {
-        console.log('Signin: error', error);
-        return res.status(500).json({ success: false, message: "Internal server error" });
+        return res
+        .status(500).json({ success: false, message: "Internal server error" });
     }
 };
+
+exports.signout = async (req, res) =>{
+    res.clearCookie('Authorization')
+    .status(200)
+    .json({success:true, message:"You have signed out successfully!"})
+};
+
+exports.sendVerificationCode = async (res,req)=>{
+    const {email} = req.body;
+    try{
+        const existingUser = await User.findOne({email})
+        if (!existingUser) {
+            return res
+            .status(404)
+            .json({ success: false, message: "User does not exist!" });
+        }
+        if (existingUser.verified){
+            return res
+            .status(400)
+            .json({ success: false, message: "User already verified!" });
+        }
+
+        const codeValue = Math.floor(Math.random() * 1000000).toString();
+    } catch (error){
+        console.log(error);
+    }
+}
