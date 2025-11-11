@@ -1,7 +1,8 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/UsersModel');
 const {signupSchema, signinSchema} = require('../middlewares/validator');
-const { doHash, doHashValidation } = require('../utils/hashing');
+const { doHash, doHashValidation, hmacProcess } = require('../utils/hashing');
+const transport = require('../middlewares/sendMail');
 exports.signup = async (req, res) => {
     const {email, password} = req.body;
     try {
@@ -81,7 +82,7 @@ exports.signout = async (req, res) =>{
     .json({success:true, message:"You have signed out successfully!"})
 };
 
-exports.sendVerificationCode = async (res,req)=>{
+exports.sendVerificationCode = async (req,res)=>{
     const {email} = req.body;
     try{
         const existingUser = await User.findOne({email})
@@ -97,7 +98,30 @@ exports.sendVerificationCode = async (res,req)=>{
         }
 
         const codeValue = Math.floor(Math.random() * 1000000).toString();
+        let info = await transport.sendMail({
+            from: process.env.NODE_CODE_SENDING_EMAIL_ADDRESS,
+            to:existingUser.email,
+            subject:"Verification Code",
+            html:"<h1>" + codeValue + "</h1>"
+        })
+        if(info.accepted[0] ===existingUser.email){
+            const hashedCodeValue = hmacProcess(codeValue, process.env.
+                HMAC_VERIFICATION_CODE_SECRET
+            )
+            existingUser.sendVerificationCode = hashedCodeValue;
+            existingUser.sendVerificationCodeValidation = Date.now()
+            await existingUser.save()
+            return res.status(200).json({
+                success:true,
+                message:"Verification code sent to your email address",
+            });
+            res.status(400).json({
+                success:false,
+                message:"Verification code not sent",
+            });
+        }
     } catch (error){
         console.log(error);
     }
 }
+
