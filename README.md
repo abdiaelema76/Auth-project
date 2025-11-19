@@ -47,9 +47,9 @@ A valid email account for sending verification codes (Gmail recommended)
 git clone <your-repo-url>
 cd Auth-project
 
-Install dependencies
+## Install dependencies
 
-bashnpm install
+npm install
 
 ## Create a .env file in the root directory with the following variables:
 
