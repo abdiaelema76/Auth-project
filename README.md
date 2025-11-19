@@ -44,7 +44,7 @@ A valid email account for sending verification codes (Gmail recommended)
 
 ## Clone the repository
 
-git clone <your-repo-url>
+git clone repo-url
 cd Auth-project
 
 ## Install dependencies
