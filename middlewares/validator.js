@@ -51,16 +51,19 @@ oldPassword: Joi.string()
 
 })
 
-exports.acceptFPCodeSchema = Joi.object({
-    email: Joi.string()
-    .min(6)
+exports.createPostsSchema = Joi.object({
+    title: Joi.string()
+    .min(3)
     .max(60)
     .required()
-    .email({
-        tlds: {allow: ['com','net']},
-    }),
-    providedCode: Joi.number().required(),
-    newPassword: Joi.string()
+    ,
+    description: Joi.string()
+     .min(6)
+    .max(600)
     .required()
-    .pattern(new RegExp('^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}$')),
+    ,
+    userId:Joi.string().required()
+
 })
+
+
