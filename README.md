@@ -54,7 +54,7 @@ bashnpm install
 
 Create a .env file in the root directory with the following variables:
 
-envPORT=8000
+## envPORT=8000
 MONGO_URI=your_mongodb_connection_string
 TOKEN_SECRET=your_jwt_secret_key
 HMAC_VERIFICATION_CODE_SECRET=your_hmac_secret_key
